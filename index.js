@@ -46,7 +46,19 @@ async function run() {
     //   const result = await servicescollection.insertMany(services, options);
     //   console.log(`${result.insertedCount} documents were inserted`);
 
-    ////
+    ////verify Admin//
+
+    const verifyAdmin = async (req, res, next) => {
+      const requester = req.decoded.email;
+      const requsterAccount = await userCollections.findOne({
+        email: requester,
+      });
+      if (requsterAccount === "admin") {
+        next();
+      } else {
+        res.status(403).send({ message: "unAuthorized access" });
+      }
+    };
 
     ///// Get All users
 
@@ -63,37 +75,27 @@ async function run() {
     });
 
     ////make sure he is admin//
-    app.get('/admin/:email',async(req,res)=>{
-      const email=req.params.email
-      const user =await userCollections.findOne({email:email})
-      const isAdmin =user.role === 'admin'
-      res.send({admin:isAdmin})
-    })
+    app.get("/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = await userCollections.findOne({ email: email });
+      const isAdmin = user.role === "admin";
+      res.send({ admin: isAdmin });
+    });
 
     ////MAke Admin////
 
-    app.put("/user/admin/:email",verifyToken, async (req, res) => {
+    app.put("/user/admin/:email", verifyToken,verifyAdmin, async (req, res) => {
       const email = req.params.email;
-      const requester= req.decoded.email;
-      const requsterAccount= await userCollections.findOne({email:requester})
-      if(requsterAccount === 'admin'){
+      
         const filter = { email: email };
 
         const updateDoc = {
           $set: { role: "admin" },
         };
-        const result = await userCollections.updateOne(
-          filter,
-          updateDoc
-          
-        );
-  
+        const result = await userCollections.updateOne(filter, updateDoc);
+
         res.send(result);
-      }
-      else{
-        res.status(403).send({message:"unAuthorized access"})
-      }
-     
+      
     });
 
     /////send User Data to backend///
@@ -174,6 +176,15 @@ async function run() {
         return res.status(403).send({ message: "forbidden" });
       }
     });
+
+    ///Delete Appiontment for user
+
+    app.delete('/AppiontmentDelete/:email',async(req,res)=>{
+      const email = req.params.email;
+      const filter={email:email}
+      const result =await bookingCollections.deleteOne(filter);
+      res.send(result)
+    })
 
     //  ////Get all userinfo
 
