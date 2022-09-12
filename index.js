@@ -12,6 +12,7 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 
 function verifyToken(req, res, next) {
   const Authorization = req.headers.authorization;
+  console.log(Authorization);
   if (!Authorization) {
     return res.status(401).send({ message: "Unauthorized access" });
   }
@@ -21,7 +22,7 @@ function verifyToken(req, res, next) {
       return res.status(403).send({ message: "Forbidden access" });
     }
     req.decoded = decoded;
-    console.log(decoded);
+    
     next();
   });
 }
@@ -32,7 +33,7 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
-const services = require("./services");
+// const services = require("./services");
 
 async function run() {
   try {
@@ -46,14 +47,15 @@ async function run() {
     //   const result = await servicescollection.insertMany(services, options);
     //   console.log(`${result.insertedCount} documents were inserted`);
 
-    ////verify Admin//
+    //verify Admin//
 
     const verifyAdmin = async (req, res, next) => {
       const requester = req.decoded.email;
+      
       const requsterAccount = await userCollections.findOne({
         email: requester,
       });
-      if (requsterAccount === "admin") {
+      if (requsterAccount.role === "admin") {
         next();
       } else {
         res.status(403).send({ message: "unAuthorized access" });
@@ -74,7 +76,15 @@ async function run() {
       res.send(service);
     });
 
-    ////make sure he is admin//
+    ///Admin:remove a user 
+    app.delete('/user/admin/:email',verifyToken,verifyAdmin,async(req,res)=>{
+      const email=req.params.email;
+      const filter={email:email};
+      const result= await userCollections.deleteOne(filter);
+      res.send(result)
+    })
+
+    //make sure he is admin//
     app.get("/admin/:email", async (req, res) => {
       const email = req.params.email;
       const user = await userCollections.findOne({ email: email });
@@ -82,19 +92,21 @@ async function run() {
       res.send({ admin: isAdmin });
     });
 
-    ////MAke Admin////
+    //MAke Admin////
 
-    app.put("/user/admin/:email", verifyToken,verifyAdmin, async (req, res) => {
+    app.put("/user/admin/:email",verifyToken,verifyAdmin,  async (req, res) => {
       const email = req.params.email;
+       const requester = req.decoded.email;
+       console.log(requester);
+      console.log(email);
+      const filter = { email: email };
+      const updateDoc = {
+        $set: { role: "admin" },
+      };
+      const result = await userCollections.updateOne(filter, updateDoc);
       
-        const filter = { email: email };
-
-        const updateDoc = {
-          $set: { role: "admin" },
-        };
-        const result = await userCollections.updateOne(filter, updateDoc);
-
-        res.send(result);
+      res.send(result)
+       
       
     });
 
