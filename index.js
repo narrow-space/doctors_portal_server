@@ -43,9 +43,7 @@ async function run() {
     const bookingCollections = database.collection("booking");
     const userCollections = database.collection("users");
 
-    //   const options = { ordered: true };
-    //   const result = await servicescollection.insertMany(services, options);
-    //   console.log(`${result.insertedCount} documents were inserted`);
+ 
 
     //verify Admin//
 
