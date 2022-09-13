@@ -1,5 +1,5 @@
 const express = require("express");
-const cors = require('cors');
+const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const app = express();
@@ -22,7 +22,7 @@ function verifyToken(req, res, next) {
       return res.status(403).send({ message: "Forbidden access" });
     }
     req.decoded = decoded;
-    
+
     next();
   });
 }
@@ -42,14 +42,13 @@ async function run() {
     const servicescollection = database.collection("services");
     const bookingCollections = database.collection("booking");
     const userCollections = database.collection("users");
-
- 
+    const userinfoCollections = database.collection("userInfo");
 
     //verify Admin//
 
     const verifyAdmin = async (req, res, next) => {
       const requester = req.decoded.email;
-      
+
       const requsterAccount = await userCollections.findOne({
         email: requester,
       });
@@ -74,13 +73,18 @@ async function run() {
       res.send(service);
     });
 
-    ///Admin:remove a user 
-    app.delete('/user/admin/:email',verifyToken,verifyAdmin,async(req,res)=>{
-      const email=req.params.email;
-      const filter={email:email};
-      const result= await userCollections.deleteOne(filter);
-      res.send(result)
-    })
+    ///Admin:remove a user
+    app.delete(
+      "/user/admin/:email",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const filter = { email: email };
+        const result = await userCollections.deleteOne(filter);
+        res.send(result);
+      }
+    );
 
     //make sure he is admin//
     app.get("/admin/:email", async (req, res) => {
@@ -92,21 +96,53 @@ async function run() {
 
     //MAke Admin////
 
-    app.put("/user/admin/:email",verifyToken,verifyAdmin,  async (req, res) => {
-      const email = req.params.email;
-       const requester = req.decoded.email;
-       console.log(requester);
-      console.log(email);
+    app.put(
+      "/user/admin/:email",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const requester = req.decoded.email;
+        console.log(requester);
+        console.log(email);
+        const filter = { email: email };
+        const updateDoc = {
+          $set: { role: "admin" },
+        };
+        const result = await userCollections.updateOne(filter, updateDoc);
+
+        res.send(result);
+      }
+    );
+
+    /// send userInfo to database//
+
+    app.put("/alluserinfo", async (req, res) => {
+      const user = req.body;
+      const email = req.body.email;
       const filter = { email: email };
+      console.log(user);
+      const options = { upsert: true };
       const updateDoc = {
-        $set: { role: "admin" },
+        $set: user,
       };
-      const result = await userCollections.updateOne(filter, updateDoc);
-      
-      res.send(result)
-       
-      
+      const result = await userinfoCollections.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
     });
+
+
+    /////Get userInfo from database
+
+    app.get('/userinfo',async(req,res)=>{
+      const query = {};
+      const cursor = userinfoCollections.find(query);
+      const service = await cursor.toArray();
+      res.send(service);
+    })
 
     /////send User Data to backend///
     app.put("/user/:email", async (req, res) => {
@@ -189,20 +225,12 @@ async function run() {
 
     ///Delete Appiontment for user
 
-    app.delete('/AppiontmentDelete/:email',async(req,res)=>{
+    app.delete("/AppiontmentDelete/:email", async (req, res) => {
       const email = req.params.email;
-      const filter={email:email}
-      const result =await bookingCollections.deleteOne(filter);
-      res.send(result)
-    })
-
-    //  ////Get all userinfo
-
-    //  app.post("/alluserlist",async(req,res)=>{
-    //   const user =req.body;
-    //   console.log(user);
-    //   res.send(user)
-    // })
+      const filter = { email: email };
+      const result = await bookingCollections.deleteOne(filter);
+      res.send(result);
+    });
   } finally {
     // await client.close();
   }
