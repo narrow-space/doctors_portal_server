@@ -166,7 +166,7 @@ async function run() {
       const token = jwt.sign(
         { email: email },
         process.env.Access_Token_secret,
-        { expiresIn: "120s" }
+        { expiresIn: "2d" }
       );
       res.send({ result, token });
     });
