@@ -3,9 +3,11 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const app = express();
-const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
+const port = process.env.PORT || 5000;
+
+
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.5nhokm7.mongodb.net/?retryWrites=true&w=majority`;
@@ -58,6 +60,8 @@ async function run() {
         res.status(403).send({ message: "unAuthorized access" });
       }
     };
+
+ 
 
     ///// Get All users
 
@@ -162,7 +166,7 @@ async function run() {
       const token = jwt.sign(
         { email: email },
         process.env.Access_Token_secret,
-        { expiresIn: "1h" }
+        { expiresIn: "90d" }
       );
       res.send({ result, token });
     });
